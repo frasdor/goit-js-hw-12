@@ -1,6 +1,7 @@
 // const axios = require('axios/dist/node/axios.cjs'); // node
 
 
+import axios from "axios";
 import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
 import SimpleLightbox from "simplelightbox";
@@ -11,29 +12,38 @@ const API_KEY = '46136265-8c05b511bcb8d1129c580e4d3';
 const form = document.getElementById('searchForm');
 const gallery = document.getElementById('gallery');
 const loader = document.querySelector('.loader');
+const loadMoreButton = document.querySelector('.loadBtn');
 
 let lightbox;
+let currentQuery = '';
+let page = 1;
+const perPage = 40;
 
-// Funkcja do pobierania obrazów z Pixabay 
-function fetchImages(query) {
-  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&orientation=horizontal&safesearch=true`;
+async function fetchImages(query, page) {
+  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(query)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=${perPage}&page=${page}`;
 
-  return fetch(url)
-    .then(response => response.json())
-    .then(data => data.hits)
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
-        message: 'Something went wrong while fetching images. Please try again later.',
-      });
+  try {
+    const response = await axios.get(url);
+    return {
+      hits: response.data.hits,
+      totalHits: response.data.totalHits
+    };  
+
+  } catch (error) { 
+    iziToast.error({
+      title: 'Error',
+      message: 'Something went wrong while fetching images. Please try again later.',
     });
+    return {hits: [], totalHits: 0 };
+  }
+
 }
+
+
 
 // Funkcja wyświetlająca obrazy w galerii
 function displayImages(images) {
-  gallery.innerHTML = ''; // Czyszczenie poprzednich wyników
-
-  if (images.length === 0) {
+  if (images.length === 0 && page === 1){
     iziToast.error({
       title: 'No Results',
       position: "topRight",
@@ -42,9 +52,8 @@ function displayImages(images) {
     return;
   }
 
-  const markup = images.map((image) => {
-    return `
-      <a href="${image.largeImageURL}" class="image-item">
+  const markup = images.map((image) => `
+    <a href="${image.largeImageURL}" class="image-item">
       <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy">
       <div class="info">
         <div class="info-item">
@@ -64,22 +73,25 @@ function displayImages(images) {
           <p>${image.downloads}</p>
         </div>
       </div>
-    </a>`;
-  }).join('');
+    </a>
+  `).join('');
 
-  gallery.innerHTML = markup;
+  gallery.insertAdjacentHTML('beforeend', markup); // Dodawanie obrazów do galerii bez czyszczenia
+
 
   // Inicjalizacja lub odświeżenie SimpleLightbox
   if (lightbox) {
     lightbox.refresh();
   } else {
-    lightbox = new SimpleLightbox('.image-item', { /* opcjonalne opcje */ });
+    lightbox = new SimpleLightbox('.image-item');
   }
 }
 
 // Funkcja obsługi wyszukiwania
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  loadMoreButton.style.display = 'none'; // Ukryj przycisk "Load more" na początku
 
   const query = document.getElementById('searchQuery').value.trim();
   if (!query) {
@@ -91,22 +103,52 @@ form.addEventListener('submit', (e) => {
     return;
   }
 
-  loader.style.display = 'block'; // Pokazanie wskaźnika pobierania
-  gallery.innerHTML = ''; // Wyczyść galerię przed nowym wyszukiwaniem
+  // Resetowanie strony i galerii przy nowym wyszukiwaniu
+  page = 1;
+  gallery.innerHTML = '';
+  currentQuery = query;
 
-  // Używamy then/catch do obsługi promes
-  fetchImages(query)
-    .then(images => {
-      loader.style.display = 'none'; // Ukrycie wskaźnika pobierania
-      if (images) {
-        displayImages(images);
-      }
-    })
-    .catch(error => {
-      loader.style.display = 'none'; // Ukrycie wskaźnika pobierania w przypadku błędu
-      iziToast.error({
-        title: 'Error',
-        message: 'An error occurred while fetching images. Please try again.',
-      });
-    });
+  loader.style.display = 'block'; // Pokazanie wskaźnika ładowania
+
+  const { hits, totalHits } = await fetchImages(query, page);
+
+  loader.style.display = 'none'; // Ukrycie wskaźnika ładowania
+  displayImages(hits);
+
+  if (hits.length > 0 && gallery.children.length < totalHits) {
+    loadMoreButton.style.display = 'block'; // Pokaż przycisk "Load more" tylko jeśli są dostępne kolejne wyniki
+  }
 });
+
+
+// Funkcja obsługi przycisku "Load more" - pobieranie kolejnych obrazów
+
+loadMoreButton.addEventListener('click', async () => {
+  page += 1; // Zwiększamy numer strony o 1
+
+  loader.style.display = 'block'; // Pokazanie wskaźnika ładowania
+  
+  const { hits, totalHits } = await fetchImages(currentQuery, page);
+  loader.style.display = 'none'; // Ukrycie wskaźnika ładowania
+  displayImages(hits);
+
+  if (gallery.children.length >= totalHits) {
+    loadMoreButton.style.display = 'none'; // Ukrycie przycisku, gdy wszystkie wyniki są załadowane
+    iziToast.info({
+      title: 'End of Results',
+      message: "We're sorry, but you've reached the end of search results.",
+    });
+  }
+
+  scrollPage(); // Przewinięcie strony
+});
+
+// Funkcja przewijająca stronę po załadowaniu kolejnych wyników
+function scrollPage() {
+  const { height: cardHeight } = gallery.firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
