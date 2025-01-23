@@ -5,7 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Page 2</title>
-  
+    <script type="module" crossorigin src="/goit-js-hw-12/assets/modulepreload-polyfill-B5Qt9EMX.js"></script>
+    <script type="module" crossorigin src="/goit-js-hw-12/assets/vendor-D0cagnvz.js"></script>
+    <script type="module" crossorigin src="/goit-js-hw-12/assets/search-Dhf3hluH.js"></script>
+    <link rel="stylesheet" crossorigin href="/goit-js-hw-12/assets/search-BbSUGtaa.css">
+    <link rel="stylesheet" crossorigin href="/goit-js-hw-12/assets/vendor-DumFYO8Z.css">
     <link rel="stylesheet" crossorigin href="/goit-js-hw-12/assets/styles-DvPDDfy5.css">
   </head>
   <body>
@@ -40,28 +44,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search App</title>
+    <title>Document</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="iziToast.min.css">
-    <link rel="stylesheet" href="../css/search-app.css">
     <script src="iziToast.min.js" type="text/javascript"></script>
-     <script src="./search-app.js"></script>
 </head>
-
 <body>
-    <div>
+    <div >
+        <h1>Image search App</h1>
         <form id="searchForm">
             <input type="text" id="searchQuery" placeholder="Search images...">
             <button type="submit">Search</button>
         </form>
         <span class="loader"></span>
         <div class="gallery" id="gallery"></div>
-        <div class="load-more-container">
-            <button class="loadBtn hidden" type="submit">Load more</button>
-        </div>    
+        <button class="loadBtn" style="display: none;">Load more</button>
     </div>
+    
 </body>
 </html>
+
         <a class="back-link" href="./index.html">Go back</a>
 
       </div>
